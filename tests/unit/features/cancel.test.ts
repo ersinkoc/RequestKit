@@ -72,6 +72,22 @@ describe('Cancel Utilities', () => {
     })
   })
 
+  describe('Cancel.toString', () => {
+    it('should return message when provided', () => {
+      const source = CancelToken.source()
+      source.cancel('Custom message')
+
+      expect(source.token.reason?.toString()).toBe('Custom message')
+    })
+
+    it('should return default message when no message provided', () => {
+      const source = CancelToken.source()
+      source.cancel()
+
+      expect(source.token.reason?.toString()).toBe('Request canceled')
+    })
+  })
+
   describe('cancelTokenToAbortController', () => {
     it('should create AbortController from token', () => {
       const source = CancelToken.source()

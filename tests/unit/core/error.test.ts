@@ -138,6 +138,17 @@ describe('Error Utilities', () => {
 
       expect(error.status).toBe(500)
     })
+
+    it('should handle response where body reading throws', async () => {
+      const response = new Response('test body', { status: 500 })
+      // Mock the text() method to throw
+      response.text = () => Promise.reject(new Error('Body read failed'))
+
+      const error = await createResponseError(response, mockConfig)
+
+      expect(error.status).toBe(500)
+      expect(error.data).toBeUndefined()
+    })
   })
 
   describe('isRequestError', () => {

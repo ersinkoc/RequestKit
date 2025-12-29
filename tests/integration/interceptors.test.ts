@@ -283,4 +283,306 @@ describe('Interceptors Integration', () => {
       expect(request.headers.get('X-Original')).toBe('true')
     })
   })
+
+  describe('Request Interceptor Error Recovery', () => {
+    it('should recover from error with rejected handler returning config', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{}'))
+
+      const client = createClient()
+
+      client.interceptors.request.use(
+        () => {
+          throw new Error('Interceptor failed')
+        },
+        (error) => {
+          // Return a recovered config
+          return { ...error.config, url: 'https://api.example.com/recovered' } as any
+        }
+      )
+
+      await client.get('https://api.example.com/test')
+
+      const request = mockFetch.mock.calls[0]?.[0] as Request
+      expect(request.url).toBe('https://api.example.com/recovered')
+    })
+
+    it('should recover from error with async rejected handler', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{}'))
+
+      const client = createClient()
+
+      client.interceptors.request.use(
+        () => {
+          throw new Error('Interceptor failed')
+        },
+        async (error) => {
+          await new Promise((r) => setTimeout(r, 10))
+          return { ...error.config, url: 'https://api.example.com/async-recovered' } as any
+        }
+      )
+
+      await client.get('https://api.example.com/test')
+
+      const request = mockFetch.mock.calls[0]?.[0] as Request
+      expect(request.url).toBe('https://api.example.com/async-recovered')
+    })
+
+    it('should throw when rejected handler also throws', async () => {
+      const client = createClient()
+
+      client.interceptors.request.use(
+        () => {
+          throw new Error('First error')
+        },
+        () => {
+          throw new Error('Second error')
+        }
+      )
+
+      await expect(client.get('https://api.example.com/test')).rejects.toThrow()
+    })
+
+    it('should throw when rejected handler returns non-config value', async () => {
+      const client = createClient()
+
+      client.interceptors.request.use(
+        () => {
+          throw new Error('Interceptor failed')
+        },
+        () => {
+          return 'not a config'
+        }
+      )
+
+      await expect(client.get('https://api.example.com/test')).rejects.toThrow()
+    })
+  })
+
+  describe('Response Interceptor Error Recovery', () => {
+    it('should recover from response error with Response object', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{}'))
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        () => {
+          throw new Error('Response interceptor failed')
+        },
+        () => {
+          // Return a new Response to recover
+          return new Response(JSON.stringify({ recovered: true }), {
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+      )
+
+      const data = await client.get('https://api.example.com/test')
+      expect(data).toEqual({ recovered: true })
+    })
+
+    it('should recover from response error with async Response', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{}'))
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        () => {
+          throw new Error('Response interceptor failed')
+        },
+        async () => {
+          await new Promise((r) => setTimeout(r, 10))
+          return new Response(JSON.stringify({ asyncRecovered: true }), {
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+      )
+
+      const data = await client.get('https://api.example.com/test')
+      expect(data).toEqual({ asyncRecovered: true })
+    })
+
+    it('should throw when response rejected handler also throws', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{}'))
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        () => {
+          throw new Error('First error')
+        },
+        () => {
+          throw new Error('Second error from rejected')
+        }
+      )
+
+      await expect(client.get('https://api.example.com/test')).rejects.toThrow('Second error from rejected')
+    })
+
+    it('should throw when response rejected handler returns non-Response', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{}'))
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        () => {
+          throw new Error('Response interceptor failed')
+        },
+        () => {
+          return 'not a response'
+        }
+      )
+
+      await expect(client.get('https://api.example.com/test')).rejects.toThrow()
+    })
+  })
+
+  describe('Error Interceptor Handling', () => {
+    it('should handle error interceptor that returns Response', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('{}', { status: 500, statusText: 'Server Error' })
+      )
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        (response) => response,
+        () => {
+          return new Response(JSON.stringify({ fallback: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+      )
+
+      const data = await client.get('https://api.example.com/test')
+      expect(data).toEqual({ fallback: true })
+    })
+
+    it('should handle async error interceptor that returns Response', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('{}', { status: 500, statusText: 'Server Error' })
+      )
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        (response) => response,
+        async () => {
+          await new Promise((r) => setTimeout(r, 10))
+          return new Response(JSON.stringify({ asyncFallback: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+      )
+
+      const data = await client.get('https://api.example.com/test')
+      expect(data).toEqual({ asyncFallback: true })
+    })
+
+    it('should propagate error when no interceptor returns Response', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('{}', { status: 500, statusText: 'Server Error' })
+      )
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        (response) => response,
+        (error) => {
+          // Don't return a Response, just throw
+          throw error
+        }
+      )
+
+      await expect(client.get('https://api.example.com/test')).rejects.toThrow()
+    })
+
+    it('should update error when rejected handler throws new error', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('{}', { status: 500, statusText: 'Server Error' })
+      )
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        (response) => response,
+        () => {
+          throw new Error('Custom error from interceptor')
+        }
+      )
+
+      // The original 500 error is thrown first, then interceptor catches and re-throws
+      await expect(client.get('https://api.example.com/test')).rejects.toThrow()
+    })
+
+    it('should preserve RequestError when rejected handler throws it', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('{}', { status: 500, statusText: 'Server Error' })
+      )
+
+      const client = createClient()
+
+      client.interceptors.response.use(
+        (response) => response,
+        (error) => {
+          // Re-throw the original RequestError
+          throw error
+        }
+      )
+
+      try {
+        await client.get('https://api.example.com/test')
+      } catch (error: unknown) {
+        // Should be a RequestError with expected properties
+        expect((error as { name: string }).name).toBe('RequestError')
+        expect((error as { status: number }).status).toBe(500)
+      }
+    })
+  })
+
+  describe('Request Interceptor RequestError Handling', () => {
+    it('should preserve RequestError when request rejected handler throws it', async () => {
+      const client = createClient()
+
+      client.interceptors.request.use(
+        () => {
+          throw new Error('First error')
+        },
+        (error) => {
+          // Throw the original RequestError (error is already a RequestError)
+          throw error
+        }
+      )
+
+      try {
+        await client.get('https://api.example.com/test')
+      } catch (error: unknown) {
+        // Should be a RequestError
+        expect((error as { name: string }).name).toBe('RequestError')
+      }
+    })
+
+    it('should wrap non-RequestError thrown by rejected handler', async () => {
+      const client = createClient()
+
+      client.interceptors.request.use(
+        () => {
+          throw new Error('First error')
+        },
+        () => {
+          // Throw a plain Error from rejected handler
+          throw new Error('From rejected handler')
+        }
+      )
+
+      try {
+        await client.get('https://api.example.com/test')
+      } catch (error: unknown) {
+        // Should be wrapped in a RequestError
+        expect((error as { name: string }).name).toBe('RequestError')
+        expect((error as { message: string }).message).toBe('From rejected handler')
+      }
+    })
+  })
 })

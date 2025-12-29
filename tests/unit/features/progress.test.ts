@@ -83,6 +83,62 @@ describe('Progress Utilities', () => {
 
       expect(onProgress).toHaveBeenCalledWith({ loaded: 0, total: 0, percent: 0 })
     })
+
+    it('should handle errors during reading', async () => {
+      const onProgress = vi.fn()
+
+      // Create a response with a stream that throws
+      let throwError = false
+      const errorStream = new ReadableStream({
+        pull(controller) {
+          if (throwError) {
+            throw new Error('Stream read error')
+          }
+          controller.enqueue(new TextEncoder().encode('data'))
+          throwError = true
+        },
+      })
+
+      const response = new Response(errorStream, {
+        headers: { 'Content-Length': '100' },
+      })
+
+      const tracked = trackDownloadProgress(response, onProgress)
+      const reader = tracked.body!.getReader()
+
+      // First read succeeds
+      await reader.read()
+
+      // Second read should throw
+      await expect(reader.read()).rejects.toThrow('Stream read error')
+    })
+
+    it('should call cancel on the underlying reader when cancelled', async () => {
+      const mockCancel = vi.fn()
+
+      // Create a custom stream with a cancel handler
+      const sourceStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data'))
+        },
+        cancel(reason) {
+          mockCancel(reason)
+        },
+      })
+
+      const response = new Response(sourceStream, {
+        headers: { 'Content-Length': '100' },
+      })
+
+      const onProgress = vi.fn()
+      const tracked = trackDownloadProgress(response, onProgress)
+      const reader = tracked.body!.getReader()
+
+      // Cancel the stream
+      await reader.cancel('User cancelled')
+
+      expect(mockCancel).toHaveBeenCalledWith('User cancelled')
+    })
   })
 
   describe('getBodySize', () => {
@@ -123,6 +179,12 @@ describe('Progress Utilities', () => {
       const params = new URLSearchParams({ a: '1', b: '2' })
       expect(getBodySize(params)).toBe(7) // "a=1&b=2"
     })
+
+    it('should return 0 for unknown types', () => {
+      // ReadableStream has unknown size
+      const stream = new ReadableStream()
+      expect(getBodySize(stream as unknown as BodyInit)).toBe(0)
+    })
   })
 
   describe('bodyToStream', () => {
@@ -151,6 +213,19 @@ describe('Progress Utilities', () => {
       } else {
         expect(stream).toBeNull()
       }
+    })
+
+    it('should return null for Blob without stream method', () => {
+      const blob = new Blob(['test'])
+      // Mock blob without stream method
+      const blobWithoutStream = { ...blob, stream: undefined } as unknown as Blob
+      Object.setPrototypeOf(blobWithoutStream, Blob.prototype)
+
+      // Force the stream property to be undefined
+      Object.defineProperty(blobWithoutStream, 'stream', { value: undefined })
+
+      const stream = bodyToStream(blobWithoutStream)
+      expect(stream).toBeNull()
     })
 
     it('should convert ArrayBuffer to stream', async () => {
@@ -234,6 +309,78 @@ describe('Progress Utilities', () => {
       expect(onProgress).toHaveBeenCalled()
       expect(progressUpdates).toContain(0) // Initial
       expect(progressUpdates).toContain(100) // Final
+    })
+
+    it('should call cancel on the underlying reader when cancelled', async () => {
+      const sourceData = new TextEncoder().encode('Hello, World!')
+      const mockCancel = vi.fn()
+
+      // Create a custom stream with a cancel handler
+      const sourceStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(sourceData)
+        },
+        cancel(reason) {
+          mockCancel(reason)
+        },
+      })
+
+      const onProgress = vi.fn()
+      const trackedStream = createProgressStream(sourceStream, sourceData.length, onProgress)
+
+      const reader = trackedStream.getReader()
+
+      // Cancel the stream
+      await reader.cancel('User cancelled')
+
+      expect(mockCancel).toHaveBeenCalledWith('User cancelled')
+    })
+
+    it('should handle errors during pull', async () => {
+      const onProgress = vi.fn()
+      let throwError = false
+
+      // Create a stream that throws during read
+      const sourceStream = new ReadableStream({
+        pull(controller) {
+          if (throwError) {
+            throw new Error('Read error')
+          }
+          controller.enqueue(new TextEncoder().encode('data'))
+          throwError = true
+        },
+      })
+
+      const trackedStream = createProgressStream(sourceStream, 100, onProgress)
+      const reader = trackedStream.getReader()
+
+      // First read succeeds
+      await reader.read()
+
+      // Second read should trigger error
+      await expect(reader.read()).rejects.toThrow('Read error')
+    })
+  })
+
+  describe('bodyToStream with Blob.stream()', () => {
+    it('should use Blob.stream() when available', async () => {
+      // Create a blob - in JSDOM, stream() is available
+      const blob = new Blob(['test content'])
+
+      // Unconditionally call bodyToStream - it should work in JSDOM
+      const stream = bodyToStream(blob)
+
+      // In JSDOM, Blob.stream() is available
+      if (typeof blob.stream === 'function') {
+        expect(stream).toBeInstanceOf(ReadableStream)
+
+        // Read the stream to verify it works
+        const reader = stream!.getReader()
+        const { value } = await reader.read()
+        expect(new TextDecoder().decode(value)).toBe('test content')
+      } else {
+        expect(stream).toBeNull()
+      }
     })
   })
 })

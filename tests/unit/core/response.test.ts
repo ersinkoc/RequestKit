@@ -6,6 +6,7 @@ import {
   processResponse,
   isSuccessStatus,
   getResponseSize,
+  cloneResponse,
 } from '../../../src/core/response'
 import type { InternalRequestConfig } from '../../../src/types'
 
@@ -219,6 +220,25 @@ describe('Response Utilities', () => {
     it('should return 0 if no content-length', () => {
       const response = new Response('test')
       expect(getResponseSize(response)).toBe(0)
+    })
+  })
+
+  describe('cloneResponse', () => {
+    it('should clone a response', async () => {
+      const original = new Response('test body', {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'text/plain' },
+      })
+
+      const cloned = cloneResponse(original)
+
+      expect(cloned).not.toBe(original)
+      expect(cloned.status).toBe(200)
+      expect(cloned.statusText).toBe('OK')
+
+      const text = await cloned.text()
+      expect(text).toBe('test body')
     })
   })
 })

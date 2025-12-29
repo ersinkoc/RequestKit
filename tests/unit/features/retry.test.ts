@@ -182,6 +182,53 @@ describe('Retry Utilities', () => {
       expect(onRetry).toHaveBeenCalledTimes(1)
       expect(onRetry).toHaveBeenCalledWith(1, error, mockConfig)
     })
+
+    it('should stop retrying if signal is aborted during delay', async () => {
+      vi.useRealTimers() // Use real timers for this test
+
+      const error = createError('Network error', mockConfig, 'ERR_NETWORK')
+      const fn = vi.fn().mockRejectedValue(error)
+
+      const controller = new AbortController()
+      const configWithSignal: InternalRequestConfig = { ...mockConfig, signal: controller.signal }
+
+      const resultPromise = withRetry(fn, { limit: 3, delay: 50 }, configWithSignal)
+
+      // Wait for first call to fail
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Abort during delay
+      controller.abort()
+
+      // Wait for promise to complete
+      await expect(resultPromise).rejects.toThrow()
+
+      // Should only call once since abort happened during delay
+      expect(fn).toHaveBeenCalledTimes(1)
+
+      vi.useFakeTimers() // Restore for other tests
+    })
+
+    it('should throw immediately when error is not retryable (non-retryable method)', async () => {
+      // Create a POST config which is not in the default retryable methods
+      const postConfig: InternalRequestConfig = { ...mockConfig, method: 'POST' }
+      const error = createError('Network error', postConfig, 'ERR_NETWORK')
+      const fn = vi.fn().mockRejectedValue(error)
+
+      // POST is not in default retryable methods, so it should throw after first failure
+      await expect(withRetry(fn, { limit: 3, delay: 100 }, postConfig)).rejects.toThrow('Network error')
+      expect(fn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should throw immediately when retryCondition returns false', async () => {
+      const error = createError('Network error', mockConfig, 'ERR_NETWORK')
+      const fn = vi.fn().mockRejectedValue(error)
+
+      // retryCondition always returns false
+      await expect(withRetry(fn, { limit: 3, delay: 100, retryCondition: () => false }, mockConfig)).rejects.toThrow('Network error')
+      expect(fn).toHaveBeenCalledTimes(1)
+    })
+
   })
 
   describe('getRetryAfterDelay', () => {
@@ -213,6 +260,14 @@ describe('Retry Utilities', () => {
       const pastDate = new Date(Date.now() - 60000)
       const response = new Response(null, {
         headers: { 'Retry-After': pastDate.toUTCString() },
+      })
+
+      expect(getRetryAfterDelay(response)).toBeUndefined()
+    })
+
+    it('should return undefined for invalid date', () => {
+      const response = new Response(null, {
+        headers: { 'Retry-After': 'invalid-date-string' },
       })
 
       expect(getRetryAfterDelay(response)).toBeUndefined()

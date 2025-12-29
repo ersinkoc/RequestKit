@@ -108,6 +108,14 @@ describe('URL Utilities', () => {
       const result = parseURL('/path')
       expect(result.pathname).toBe('/path')
     })
+
+    it('should handle various relative paths with base URL', () => {
+      // Relative paths get normalized with base
+      const result = parseURL('some-path')
+      expect(result.pathname).toBe('/some-path')
+      expect(result.protocol).toBe('http:')
+      expect(result.host).toBe('localhost')
+    })
   })
 
   describe('getOrigin', () => {
@@ -133,6 +141,29 @@ describe('URL Utilities', () => {
 
     it('should return false for invalid URLs', () => {
       expect(isSameOrigin('invalid', 'https://example.com')).toBe(false)
+    })
+  })
+
+  describe('parseURL error handling', () => {
+    it('should return fallback for URL that throws in constructor', () => {
+      // Mock URL constructor to throw
+      const originalURL = globalThis.URL
+      globalThis.URL = class {
+        constructor() {
+          throw new Error('Invalid URL')
+        }
+      } as unknown as typeof URL
+
+      try {
+        const result = parseURL('test-path')
+        expect(result.protocol).toBe('')
+        expect(result.host).toBe('')
+        expect(result.pathname).toBe('test-path')
+        expect(result.search).toBe('')
+        expect(result.hash).toBe('')
+      } finally {
+        globalThis.URL = originalURL
+      }
     })
   })
 })

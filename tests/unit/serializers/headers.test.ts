@@ -40,6 +40,14 @@ describe('Headers Utilities', () => {
       expect(normalized.has('Content-Type')).toBe(false)
       expect(normalized.get('Accept')).toBe('application/json')
     })
+
+    it('should handle unknown HeadersInit type by passing to Headers constructor', () => {
+      // Create a custom iterable that mimics HeadersInit
+      const customHeaders = new Map([['Content-Type', 'application/json']])
+      // Force the type to pretend it's a valid HeadersInit
+      const normalized = normalizeHeaders(customHeaders as unknown as HeadersInit)
+      expect(normalized).toBeInstanceOf(Headers)
+    })
   })
 
   describe('mergeHeaders', () => {
@@ -140,6 +148,17 @@ describe('Headers Utilities', () => {
 
     it('should return undefined for undefined headers', () => {
       expect(getHeader(undefined, 'Content-Type')).toBeUndefined()
+    })
+
+    it('should return undefined when header is not found in plain object', () => {
+      const headers = { 'Accept': 'application/json' }
+      expect(getHeader(headers, 'Content-Type')).toBeUndefined()
+    })
+
+    it('should return undefined for unknown header type', () => {
+      // Create a value that is not Headers, not Array, and not PlainObject
+      const headers = new Map([['Content-Type', 'application/json']])
+      expect(getHeader(headers as unknown as Record<string, string>, 'Content-Type')).toBeUndefined()
     })
   })
 

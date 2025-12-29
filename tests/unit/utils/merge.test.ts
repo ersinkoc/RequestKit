@@ -138,6 +138,24 @@ describe('Merge Utilities', () => {
       expect(cloned.get('Content-Type')).toBe('application/json')
       expect(cloned).not.toBe(headers)
     })
+
+    it('should return class instances as-is', () => {
+      class CustomClass {
+        value = 42
+      }
+      const instance = new CustomClass()
+      const cloned = deepClone(instance)
+
+      // Class instances are returned as-is (not cloned)
+      expect(cloned).toBe(instance)
+    })
+
+    it('should handle RegExp objects (returned as-is)', () => {
+      const regex = /test/gi
+      const cloned = deepClone(regex)
+
+      expect(cloned).toBe(regex)
+    })
   })
 
   describe('pick', () => {

@@ -91,6 +91,37 @@ describe('Params Serializer', () => {
     it('should return empty object for empty string', () => {
       expect(parseParams('')).toEqual({})
     })
+
+    it('should accumulate bracket array values', () => {
+      // First value creates the array, subsequent bracket values add to it
+      const result = parseParams('items[]=first&items[]=second&items[]=third')
+      expect(result.items).toEqual(['first', 'second', 'third'])
+    })
+
+    it('should convert single value to array when duplicate non-bracket key is found', () => {
+      // Non-bracket keys with multiple values should become arrays
+      const result = parseParams('name=first&other=x&name=second')
+      expect(result.name).toEqual(['first', 'second'])
+    })
+
+    it('should handle mixed bracket and non-bracket for same base key', () => {
+      // If already have bracket values and then encounter more
+      const result = parseParams('tags[0]=a&tags[1]=b&tags[2]=c')
+      expect(result.tags).toEqual(['a', 'b', 'c'])
+    })
+
+    it('should convert existing value to array when bracket key collides', () => {
+      // When there's an existing single value and a bracket key with the same base
+      // First set a single value, then a bracket value
+      const result = parseParams('items=single&items[]=bracket1&items[]=bracket2')
+      expect(result.items).toEqual(['single', 'bracket1', 'bracket2'])
+    })
+
+    it('should append to existing array when more non-bracket duplicates found', () => {
+      // Three or more values for the same non-bracket key
+      const result = parseParams('val=first&val=second&val=third')
+      expect(result.val).toEqual(['first', 'second', 'third'])
+    })
   })
 
   describe('createParamsSerializer', () => {
