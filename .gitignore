@@ -51,6 +51,7 @@ temp/
 playwright-data/
 playwright/.cache/
 .playwright/
+.playwright-mcp/
 test-results/
 playwright-report/
 

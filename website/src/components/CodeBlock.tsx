@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Copy, Check, FileCode } from 'lucide-react'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-typescript'
@@ -6,6 +6,8 @@ import 'prismjs/components/prism-jsx'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-json'
+import 'prismjs/plugins/line-numbers/prism-line-numbers'
+import 'prismjs/plugins/line-numbers/prism-line-numbers.css'
 
 interface CodeBlockProps {
   code: string
@@ -21,18 +23,19 @@ export default function CodeBlock({
   showLineNumbers = true,
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
+  const codeRef = useRef<HTMLPreElement>(null)
 
   useEffect(() => {
-    Prism.highlightAll()
-  }, [code])
+    if (codeRef.current) {
+      Prism.highlightElement(codeRef.current.querySelector('code')!)
+    }
+  }, [code, language])
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
-
-  const lines = code.trim().split('\n')
 
   return (
     <div className="group relative my-6 overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
@@ -58,22 +61,12 @@ export default function CodeBlock({
 
       {/* Code */}
       <div className="overflow-x-auto">
-        <pre className={`language-${language} !m-0 !rounded-none !bg-transparent`}>
+        <pre
+          ref={codeRef}
+          className={`language-${language} !m-0 !rounded-none !bg-transparent ${showLineNumbers ? 'line-numbers' : ''}`}
+        >
           <code className={`language-${language} font-mono`}>
-            {showLineNumbers ? (
-              <div className="flex">
-                <div className="flex flex-col pr-4 text-right text-slate-500">
-                  {lines.map((_, i) => (
-                    <span key={i} className="select-none">
-                      {i + 1}
-                    </span>
-                  ))}
-                </div>
-                <div>{code.trim()}</div>
-              </div>
-            ) : (
-              code.trim()
-            )}
+            {code.trim()}
           </code>
         </pre>
       </div>

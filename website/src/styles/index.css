@@ -144,25 +144,42 @@ pre[class*="language-"] {
   color: #fb923c;
 }
 
-/* Line numbers */
-.line-numbers {
+/* Line numbers - Prism plugin overrides */
+pre[class*="language-"].line-numbers {
   position: relative;
-  padding-left: 3.5rem;
+  padding-left: 3.8em;
   counter-reset: linenumber;
 }
 
-.line-numbers > code {
+pre[class*="language-"].line-numbers > code {
   position: relative;
+  white-space: inherit;
 }
 
-.line-number {
+.line-numbers .line-numbers-rows {
   position: absolute;
-  left: 0;
-  width: 2.5rem;
-  text-align: right;
-  color: #475569;
+  pointer-events: none;
+  top: 0;
+  left: -3.8em;
+  width: 3em;
+  font-size: 100%;
+  letter-spacing: -1px;
+  border-right: 1px solid #334155;
   user-select: none;
-  padding-right: 0.75rem;
+  padding: 1em 0;
+}
+
+.line-numbers-rows > span {
+  display: block;
+  counter-increment: linenumber;
+}
+
+.line-numbers-rows > span:before {
+  content: counter(linenumber);
+  color: #475569;
+  display: block;
+  padding-right: 0.8em;
+  text-align: right;
 }
 
 /* Scrollbar */
