@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 15 23 42;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --primary: 245 158 11;
+    --primary-foreground: 255 255 255;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --border: 226 232 240;
+  }
+
+  .dark {
+    --background: 15 23 42;
+    --foreground: 248 250 252;
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
+    --primary: 245 158 11;
+    --primary-foreground: 255 255 255;
+    --muted: 51 65 85;
+    --muted-foreground: 148 163 184;
+    --border: 51 65 85;
+  }
+
+  * {
+    @apply border-slate-700;
+  }
+
+  body {
+    @apply bg-slate-900 text-slate-100 font-sans antialiased;
+  }
+}
+
+@layer components {
+  .container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600;
+  }
+
+  .btn-secondary {
+    @apply btn bg-slate-700 text-slate-100 hover:bg-slate-600;
+  }
+
+  .btn-outline {
+    @apply btn border border-slate-600 bg-transparent hover:bg-slate-800;
+  }
+}
+
+/* Prism.js Theme */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: #e2e8f0;
+  background: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 1.6;
+  tab-size: 2;
+  hyphens: none;
+}
+
+pre[class*="language-"] {
+  padding: 1rem;
+  margin: 0;
+  overflow: auto;
+  border-radius: 0.5rem;
+  background: #1e293b;
+}
+
+:not(pre) > code[class*="language-"] {
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  background: #334155;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #64748b;
+}
+
+.token.punctuation {
+  color: #94a3b8;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #f472b6;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #a3e635;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #fbbf24;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #60a5fa;
+}
+
+.token.function,
+.token.class-name {
+  color: #c084fc;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #fb923c;
+}
+
+/* Line numbers */
+.line-numbers {
+  position: relative;
+  padding-left: 3.5rem;
+  counter-reset: linenumber;
+}
+
+.line-numbers > code {
+  position: relative;
+}
+
+.line-number {
+  position: absolute;
+  left: 0;
+  width: 2.5rem;
+  text-align: right;
+  color: #475569;
+  user-select: none;
+  padding-right: 0.75rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

@@ -1,0 +1,46 @@
+# Source files (dist is published, not src)
+src/
+tests/
+website/
+
+# Config files
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+eslint.config.js
+.gitignore
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Test coverage
+coverage/
+test-results/
+playwright-report/
+
+# Git
+.git/
+.github/
+
+# Development files
+*.log
+.env*
+*.tsbuildinfo
+
+# Playwright / MCP
+playwright-data/
+.playwright/
+
+# Cache
+.cache/
+.turbo/
+.eslintcache
+
+# OS files
+.DS_Store
+Thumbs.db

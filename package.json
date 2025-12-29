@@ -1,0 +1,102 @@
+{
+  "name": "@oxog/requestkit",
+  "version": "1.0.0",
+  "description": "Zero-dependency HTTP client built on native fetch with interceptors, retry, and progress tracking",
+  "author": "Ersin KOÇ",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ersinkoc/requestkit.git"
+  },
+  "homepage": "https://requestkit.oxog.dev",
+  "bugs": {
+    "url": "https://github.com/ersinkoc/requestkit/issues"
+  },
+  "keywords": [
+    "http",
+    "fetch",
+    "client",
+    "request",
+    "axios",
+    "interceptor",
+    "retry",
+    "timeout",
+    "progress",
+    "typescript",
+    "react",
+    "hooks"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.js"
+      },
+      "require": {
+        "types": "./dist/react/index.d.cts",
+        "default": "./dist/react/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build && npm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@testing-library/react": "^14.1.2",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "@vitest/coverage-v8": "^1.1.3",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "jsdom": "^23.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.50.1",
+    "vitest": "^1.1.3"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
